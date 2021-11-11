@@ -1,0 +1,5 @@
+ALTER TABLE users
+ADD COLUMN danikredita INT(120) DEFAULT 0;
+
+ALTER TABLE users 
+ADD COLUMN kredit INT(120) DEFAULT 0;
