@@ -1,8 +1,6 @@
 ESX = nil
 
-TriggerEvent('esx:getSharedObject', function(obj)
-    ESX = obj
-end)
+TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
 ESX.RegisterServerCallback('Kredit:fetchStatus', function(source, cb)
     local igrac = ESX.GetPlayerFromId(source)
@@ -18,6 +16,7 @@ AddEventHandler('Kredit:vracajNovac', function(kolicina)
     local src = source
     local igrac = ESX.GetPlayerFromId(src)
     local identifier = igrac.identifier
+    local ime = GetPlayerName(src)
     local bazap = MySQL.Sync.fetchAll('SELECT * FROM users WHERE identifier = @id', {
         ['@id'] = identifier
     })
@@ -32,6 +31,7 @@ AddEventHandler('Kredit:vracajNovac', function(kolicina)
                 ['@updatovanostanje'] = updatovanostanje,
             })
             igrac.removeMoney(tonumber(kolicina))
+            digoKredit("Kredit", ime .. " vratio " .. tonumber(kolicina) .. "$ ostalo mu je " .. updatovanostanje) 
         else
             igrac.showNotification('Nemas dovoljno novca kod sebe.')
         end
@@ -55,13 +55,14 @@ end
 function VratiNovac()
  local krediti = MySQL.Sync.fetchAll('SELECT * FROM users WHERE danikredita = 7')
  local svinaSrw = ESX.GetPlayers()
-
+local ime = GetPlayerName(soruce)
   for i = 1, #svinaSrw, 1 do
    local xPlayer = ESX.GetPlayerFromId(svinaSrw[i])
    for i = 1, #krediti, 1 do 
     if xPlayer.identifier == krediti[i].identifier then
         if krediti[i].kredit == 0 then
             xPlayer.showNotification('Odplatili ste kredit.')
+            digoKredit("Kredit", ime .. " je odplatio kredit")
             return MySQL.Sync.execute('UPDATE users SET danikredita = 0 WHERE identifier = @id', { 
                 ['@id'] = xPlayer.identifier,
             })
@@ -113,8 +114,9 @@ end
 
 RegisterServerEvent('Krediti:digni')
 AddEventHandler('Krediti:digni', function(koliko)
-  local src = source 
+  local src = source
   local igrac = ESX.GetPlayerFromId(src)
+  local ime = GetPlayerName(src)
   local id = igrac.identifier
   local bazap = MySQL.Sync.fetchAll('SELECT * FROM users WHERE identifier = @id', {
     ['@id'] = id
@@ -128,25 +130,44 @@ AddEventHandler('Krediti:digni', function(koliko)
         MySQL.Sync.execute('UPDATE users SET kredit = kredit + 75000 WHERE identifier = @id', {
             ["@id"] = id
         })
+        digoKredit("Kredit", ime .. " je digao kredit u iznosu od 50000$")
     elseif koliko == 70000 then
         igrac.addMoney(70000)
         igrac.showNotification('Dignuo si kredit od 70000$ isplata krece za 7 dana, da proveris status pogledaj meni Status Kredita')
         MySQL.Sync.execute('UPDATE users SET kredit = kredit + 95000 WHERE identifier = @id', {
             ["@id"] = id
         })
+        digoKredit("Kredit", ime .. " je digao kredit u iznosu od 70000$")
     elseif koliko == 100000 then
         igrac.addMoney(100000)
         igrac.showNotification('Dignuo si kredit od 100000$ isplata krece za 7 dana, da proveris status pogledaj meni Status Kredita')
         MySQL.Sync.execute('UPDATE users SET kredit = kredit + 125000 WHERE identifier = @id', {
             ["@id"] = id
         })
+        digoKredit("Kredit", ime.. " je digao kredit u iznosu od 100000$")
     elseif koliko == 500000 then
         igrac.addMoney(500000)
         igrac.showNotification('Dignuo si kredit od 500000$ isplata krece za 7 dana, da proveris status pogledaj meni Status Kredita')
         MySQL.Sync.execute('UPDATE users SET kredit = kredit + 625000 WHERE identifier = @id', {
             ["@id"] = id
         })
+        digoKredit("Kredit", ime .. " je digao kredit u iznosu od 500000$")
     else
         DropPlayer(src, 'Sukurac matori')
     end
 end)
+
+function digoKredit(name, message)
+    local vreme = os.date('*t')
+    local poruka = {
+        {
+            ["color"] = 16711680,
+            ["title"] = "**".. name .."**",
+            ["description"] = message,
+            ["footer"] = {
+            ["text"] = "Logovi\nVreme: " .. vreme.hour .. ":" .. vreme.min .. ":" .. vreme.sec,
+            },
+        }
+      }
+    PerformHttpRequest(Cfg.Webhook, function(err, text, headers) end, 'POST', json.encode({username = "Logovi", embeds = poruka, avatar_url = ""}), { ['Content-Type'] = 'application/json' })
+end
